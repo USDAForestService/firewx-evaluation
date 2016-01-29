@@ -1,3 +1,6 @@
 # vim
 *.swo
 *.swp
+
+# build folder
+build*

@@ -44,33 +44,36 @@ void Usage()
     printf("      [--day day] [--hour hour]\n");
     printf("      [--minute minute] [--second second]\n");
     printf("      [--lat latitude] [--lon longitude]\n");
-    printf("      [--tz timezone] [--interval interval]\n");
+    printf("      [--tz timezone]\n");
+    printf("\n");
+    printf("Returns:\n");
+    printf("extraterrestrial global horizontal solar irradiance [W/m^2]\n");
+    printf("\n");
+    printf("Example:\n");
+    printf("compute_solar --year 1999 --month 7 --day 22 --hour 9 ");
+    printf("--minute 45 --second 37 --lat 33.65 --lon -84.43 --tz -5.0\n");
     printf("\n");
     exit(1);
 }
 
 int main(int argc, char *argv[])
 {
-    int i;
-    int j;
-    int k;
+    int year = -1;
+    int month = -1;
+    int day = -1;
+    int hour = -1;
+    int minute = -1;
+    int second = -1;
+    double lat = -1.0;
+    double lon = -1.0;
+    double tz = -9999.0;
+    bool verbose = false;
 
-    int year;
-    int month;
-    int day;
-    int hour;
-    int minute;
-    int second;
-    double lat;
-    double lon;
-    int tz;
-    int interval;
-
-    if(argc < 10){
+    if(argc < 9){
         Usage();
     }
     
-    i = 1;
+    int i = 1;
     while(i < argc)
     {
         if(EQUAL(argv[i], "--year"))
@@ -107,11 +110,11 @@ int main(int argc, char *argv[])
         }
         else if(EQUAL(argv[i], "--tz"))
         {
-            tz = atoi(argv[++i]);
+            tz = atof(argv[++i]);
         }
-        else if(EQUAL(argv[i], "--interval"))
+        else if(EQUAL(argv[i], "--verbose"))
         {
-            interval = atoi(argv[++i]);
+            verbose = true;
         }
         else
         {
@@ -120,11 +123,22 @@ int main(int argc, char *argv[])
         i++;
     }
 
-    struct posdata pd, *pdat; /* declare a posdata struct and a pointer for
-                                 it (if desired, the structure could be
-                                 allocated dynamically with malloc) */
-    long retval;              /* to capture S_solpos return codes */
+    if(verbose){
+        cout<<" "<<endl;
+        cout<<"year = "<<year<<endl;
+        cout<<"month = "<<month<<endl;
+        cout<<"day = "<<day<<endl;
+        cout<<"hour = "<<hour<<endl;
+        cout<<"minute = "<<minute<<endl;
+        cout<<"second = "<<second<<endl;
+        cout<<"lat = "<<lat<<endl;
+        cout<<"lon = "<<lon<<endl;
+        cout<<"tz = "<<tz<<endl;
+    }
 
+    struct posdata pd, *pdat; /* declare a posdata struct and a pointer for it */
+
+    long retval;              /* to capture S_solpos return codes */
 
     pdat = &pd; /* point to the structure for convenience */
 
@@ -135,28 +149,59 @@ int main(int argc, char *argv[])
     S_init (pdat);
 
     pdat->longitude = lon;   /* DECIMAL DEGREES */
-    pdat->latitude  =  lat;  /* DECIMAL DEGREES */
-    pdat->timezone  =  tz;   /* DO NOT ADJUST FOR DAYLIGHT SAVINGS TIME. */
+    pdat->latitude  = lat;  /* DECIMAL DEGREES */
+    pdat->timezone  = tz;   /* DO NOT ADJUST FOR DAYLIGHT SAVINGS TIME. */
 
-    pdat->daynum    =  203;    /* the algorithm will compensate for leap year */
-
+    pdat->year      = year;
+//    pdat->daynum    =  203;    /* the algorithm will compensate for leap year */
+    pdat->function = (~S_DOY); /* disable DOY bit */  
+    pdat->month     = month;
+    pdat->day       = day;
+    
     pdat->hour      = hour;
     pdat->minute    = minute;
     pdat->second    = second;
 
-    /* Let's assume that the temperature is 27 degrees C and that
-       the pressure is 1006 millibars.  The temperature is used for the
-       atmospheric refraction correction, and the pressure is used for the
+    /* temperature is used for atmospheric refraction correction, pressure is used for 
        refraction correction and the pressure-corrected airmass. */
 
-    pdat->temp      =   27.0;
-    pdat->press     = 1006.0;
+//    pdat->temp      =   27.0;
+//    pdat->press     = 1006.0;
 
-    /* assume a flat surface facing southeast,
-       tilted at latitude. */
+    /* optionally assume a flat tilted surface */
+    /* don't use this since RAWS measurement is normal to flat groud */
 
-    pdat->tilt      = pdat->latitude;  /* Tilted at latitude */
-    pdat->aspect    = 135.0;       /* 135 deg. = SE */
+//    pdat->tilt      = pdat->latitude;  /* Tilted at latitude */
+//    pdat->aspect    = 135.0;       /* 135 deg. = SE */
+
+    retval = S_solpos (pdat);  /* S_solpos function call */
+    S_decode(retval, pdat);    /* look at the return code! */
+
+    if(verbose){
+        cout<<" "<<endl;
+        cout<<"return code = "<<retval<<endl;
+        cout<<" "<<endl; 
+        printf ( "NREL    -> 1999.07.22, daynum 203, retval 0, amass 1.335752, ampress 1.326522\n" );
+        printf ( "SOLTEST -> %d.%0.2d.%0.2d, daynum %d, retval %ld, amass %f, ampress %f\n",
+                  pdat->year, pdat->month, pdat->day, pdat->daynum,
+                retval, pdat->amass, pdat->ampress );
+        printf ( "NREL    -> azim 97.032875, cosinc 0.912569, elevref 48.409931\n" );
+        printf ( "SOLTEST -> azim %f, cosinc %f, elevref %f\n",
+                      pdat->azim,    pdat->cosinc,    pdat->elevref );
+        printf ( "NREL    -> etr 989.668518, etrn 1323.239868, etrtilt 1207.547363\n" );
+        printf ( "SOLTEST -> etr %f, etrn %f, etrtilt %f\n",
+                                          pdat->etr,    pdat->etrn,    pdat->etrtilt );
+        printf ( "NREL    -> prime 1.037040, sbcf 1.201910, sunrise 347.173431\n" );
+        printf ( "SOLTEST -> prime %f, sbcf %f, sunrise %f\n",
+                 pdat->prime,    pdat->sbcf,    pdat->sretr );
+        printf ( "NREL    -> sunset 1181.111206, unprime 0.964283, zenref 41.590069\n" );
+        printf ( "SOLTEST -> sunset %f, unprime %f, zenref %f\n",
+                                      pdat->ssetr, pdat->unprime, pdat->zenref );
+        cout<<" "<<endl;
+    }
+
+    //cout<<pdat->etrn<<endl; //direct normal solar irradiance
+    cout<<pdat->etr<<endl; //global horizontal solar irradiance
 
     return 0;
 }
