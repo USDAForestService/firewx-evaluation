@@ -26,12 +26,56 @@
  * DEALINGS IN THE SOFTWARE.
  *
  *****************************************************************************/
+#include <stdlib.h>
+#include <string.h>
 #include "newfms.h"
 #include <iostream>
 using namespace std;
 
-int main()
+#define EQUAL(a,b) (strcmp(a,b)==0)
+
+void Usage()
 {
+    printf("Usage:\n");
+    printf("compute_fms file [--verbose]\n");
+    printf("\n");
+    printf("Returns:\n");
+    printf("1-hr, 10-hr, and 100-hr fuel moistures are written to fms_output.txt.\n");
+    printf("\n");
+    printf("Example:\n");
+    printf("compute_fms fms_input.txt\n");
+    printf("\n");
+    exit(1);
+}
+
+
+int main(int argc, char *argv[])
+{
+    const char *inputFile;
+    bool verbose = false;
+
+    if(argc < 2 || argc > 3){
+        Usage();
+    }
+    
+    int i = 1;
+    while(i < argc)
+    {
+        if(EQUAL(argv[i], "--verbose"))
+        {
+            verbose = true;
+        }
+        else if(EQUAL(argv[i], "--help"))
+        {
+            Usage();
+        }
+        else 
+        {
+            inputFile = argv[i];
+        }
+        i++;
+    }
+
     int startYear;                  // (4 digits)
     int startMonth;                 // (1 = Jan, 12 = Dec)
     int startDay;                   // (1-31)
@@ -78,7 +122,11 @@ int main()
     FILE *inFile;
     FILE *outFile;
 
-    inFile = fopen("fms_input.txt", "r");
+    inFile = fopen(inputFile, "r");
+    if(inFile == 0){
+        cout<<"Can't open input file: "<<inputFile<<endl;
+        return 0;
+    }
     outFile = fopen("fms_output.txt", "w");
 
     fprintf(outFile, "year,month,day,hour,1hrfm,10hrfm,100hrfm\n"); 
@@ -89,20 +137,22 @@ int main()
             &startAirHumidity, &startSolarRad, &startCumRain,
             &stickTemp, &stickSurfHumidity, &stickMoisture);
 
-    cout<<"startYear = "<<startYear<<endl;
-    cout<<"startMonth = "<<startMonth<<endl;
-    cout<<"startDay = "<<startDay<<endl;
-    cout<<"startHour = "<<startHour<<endl;
-    cout<<"startMinute = "<<startMinute<<endl;
-    cout<<"startSecond = "<<startSecond<<endl;
-    cout<<"startMillisecond = "<<startMillisecond<<endl;
-    cout<<"startAirTemp = "<<startAirTemp<<endl;
-    cout<<"startAirHumidity = "<<startAirHumidity<<endl;
-    cout<<"startSolarRad = "<<startSolarRad<<endl;
-    cout<<"startCumRain = "<<startCumRain<<endl;
-    cout<<"stickTemp = "<<stickTemp<<endl;
-    cout<<"stickSurfHumidity = "<<stickSurfHumidity<<endl;
-    cout<<"stickMoisture = "<<stickMoisture<<endl;
+    if(verbose){
+        cout<<"startYear = "<<startYear<<endl;
+        cout<<"startMonth = "<<startMonth<<endl;
+        cout<<"startDay = "<<startDay<<endl;
+        cout<<"startHour = "<<startHour<<endl;
+        cout<<"startMinute = "<<startMinute<<endl;
+        cout<<"startSecond = "<<startSecond<<endl;
+        cout<<"startMillisecond = "<<startMillisecond<<endl;
+        cout<<"startAirTemp = "<<startAirTemp<<endl;
+        cout<<"startAirHumidity = "<<startAirHumidity<<endl;
+        cout<<"startSolarRad = "<<startSolarRad<<endl;
+        cout<<"startCumRain = "<<startCumRain<<endl;
+        cout<<"stickTemp = "<<stickTemp<<endl;
+        cout<<"stickSurfHumidity = "<<stickSurfHumidity<<endl;
+        cout<<"stickMoisture = "<<stickMoisture<<endl;
+    }
     
     Fms_InitializeAt(pStick1hr, startYear, startMonth, startDay, startHour, startMinute, startSecond,
             startMillisecond, startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
@@ -136,9 +186,11 @@ int main()
         fuelMoisture_10 = Fms_MeanWtdMoisture(pStick10hr);
         fuelMoisture_100 = Fms_MeanWtdMoisture(pStick100hr);
 
-        cout<<"1-hr fuel moisture = "<<fuelMoisture_1<<endl;
-        cout<<"10-hr fuel moisture = "<<fuelMoisture_10<<endl;
-        cout<<"100-hr fuel moisture = "<<fuelMoisture_100<<endl;
+        if(verbose){
+            cout<<"1-hr fuel moisture = "<<fuelMoisture_1<<endl;
+            cout<<"10-hr fuel moisture = "<<fuelMoisture_10<<endl;
+            cout<<"100-hr fuel moisture = "<<fuelMoisture_100<<endl;
+        }
         
         fprintf(outFile, "%d,%d,%d,%d,%lf,%lf,%lf\n", endYear, endMonth, endDay, 
                 endHour, fuelMoisture_1, fuelMoisture_10, fuelMoisture_100);
