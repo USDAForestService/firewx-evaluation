@@ -67,7 +67,6 @@ void Usage()
     exit(1);
 }
 
-
 int main(int argc, char *argv[])
 {
     const char *inputFile;
@@ -148,8 +147,8 @@ int main(int argc, char *argv[])
 
     inFile = fopen(inputFile, "r");
     if(inFile == 0){
-        cout<<"Can't open input file: "<<inputFile<<endl;
-        return 0;
+        cout<<"Can't open input file '"<<inputFile<<"'."<<endl;
+        exit(1);
     }
 
     outFile = fopen(outputFile, "a");
