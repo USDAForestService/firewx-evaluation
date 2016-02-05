@@ -37,13 +37,32 @@ using namespace std;
 void Usage()
 {
     printf("Usage:\n");
-    printf("compute_fms file [--verbose]\n");
+    printf("compute_fms [--input_file inFile] [--output_file outFile] [--verbose]\n");
     printf("\n");
     printf("Returns:\n");
     printf("1-hr, 10-hr, and 100-hr fuel moistures are written to fms_output.txt.\n");
     printf("\n");
     printf("Example:\n");
-    printf("compute_fms fms_input.txt\n");
+    printf("compute_fms --input_file fms_input.txt --output_file fms_output.txt\n");
+    printf("\n");
+    printf("Each row of the input file must have the following space-delimited variables.\n");
+    printf("The variables must be in the following order with no header.\n");
+    printf("Note that the first line contains three additional variables.\n");
+    printf("\n");
+    printf("startYear               [4 digits]\n");
+    printf("startMonth              [1 = Jan, 12 = Dec]\n");
+    printf("startDay                [1-31]\n");
+    printf("startHour               [0-23]\n");
+    printf("startMinute             [0-59]\n");
+    printf("startSecond             [0-59]\n");
+    printf("startMillisecond        [0-999]\n");
+    printf("startAirTemp            [C]\n");
+    printf("startAirHumidity        [g/g]\n");
+    printf("startSolarRad           [W/m2]\n");
+    printf("startCumRain            [cm]\n");
+    printf("stickTemp               [C] (*first line only)\n");
+    printf("stickSurfHumidity       [g/g] (*first line only)\n");
+    printf("stickMoisture           [g/g] (*first line only)\n");
     printf("\n");
     exit(1);
 }
@@ -52,26 +71,31 @@ void Usage()
 int main(int argc, char *argv[])
 {
     const char *inputFile;
+    const char *outputFile;
     bool verbose = false;
 
-    if(argc < 2 || argc > 3){
+    if(argc < 5){
         Usage();
     }
     
     int i = 1;
     while(i < argc)
     {
-        if(EQUAL(argv[i], "--verbose"))
+        if(EQUAL(argv[i], "--input_file")) 
+        {
+            inputFile = argv[++i];
+        }
+        else if(EQUAL(argv[i], "--output_file")) 
+        {
+            outputFile = argv[++i];
+        }
+        else if(EQUAL(argv[i], "--verbose"))
         {
             verbose = true;
         }
-        else if(EQUAL(argv[i], "--help"))
+        else
         {
             Usage();
-        }
-        else 
-        {
-            inputFile = argv[i];
         }
         i++;
     }
@@ -127,7 +151,7 @@ int main(int argc, char *argv[])
         cout<<"Can't open input file: "<<inputFile<<endl;
         return 0;
     }
-    outFile = fopen("fms_output.txt", "w");
+    outFile = fopen(outputFile, "w");
 
     fprintf(outFile, "year,month,day,hour,1hrfm,10hrfm,100hrfm\n"); 
 
