@@ -1,4 +1,3 @@
-
 /******************************************************************************
  *
  * $Id$
@@ -29,9 +28,8 @@
  *****************************************************************************/
 #include <stdlib.h>
 #include <string.h>
-#include "deadfuelmoisture.h"
+#include "newfms.h"
 #include <iostream>
-#include <stdio.h>
 using namespace std;
 
 #define EQUAL(a,b) (strcmp(a,b)==0)
@@ -128,19 +126,21 @@ int main(int argc, char *argv[])
     double endSolarRad;           // (W/m2)
     double endCumRain;            // (cm)
 
+    Fms *pStick1hr;
+    Fms *pStick10hr;
+    Fms *pStick100hr;
+    char *stick1hr = "stick_1hr"; 
+    char *stick10hr = "stick_10hr"; 
+    char *stick100hr = "stick_100hr"; 
+
     double fuelMoisture_1;          // volume-weighted mean moisture content (g/g)
     double fuelMoisture_10;
     double fuelMoisture_100;
 
     //create the sticks
-    Sem::DeadFuelMoisture* dfm1h = Sem::DeadFuelMoisture::createDeadFuelMoisture1("stick_1hr");
-    Sem::DeadFuelMoisture* dfm10h = Sem::DeadFuelMoisture::createDeadFuelMoisture10("stick_10hr");
-    Sem::DeadFuelMoisture* dfm100h = Sem::DeadFuelMoisture::createDeadFuelMoisture100("stick_100hr");
-
-    //initialize the sticks
-    dfm1h->initializeStick();
-    dfm10h->initializeStick();
-    dfm100h->initializeStick();
+    pStick1hr = Fms_Create1Hour(stick1hr);
+    pStick10hr = Fms_Create10Hour(stick10hr);
+    pStick100hr = Fms_Create100Hour(stick100hr);
 
     FILE *inFile;
     FILE *outFile;
@@ -178,17 +178,16 @@ int main(int argc, char *argv[])
         cout<<"stickMoisture = "<<stickMoisture<<endl;
     }
     
-    //initialize the stick environment
-    dfm1h->initializeEnvironment(startYear, startMonth, startDay, startHour, startMinute, startSecond,
-            startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
+    Fms_InitializeAt(pStick1hr, startYear, startMonth, startDay, startHour, startMinute, startSecond,
+            startMillisecond, startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
             stickSurfHumidity, stickMoisture);
 
-    dfm10h->initializeEnvironment(startYear, startMonth, startDay, startHour, startMinute, startSecond,
-            startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
+    Fms_InitializeAt(pStick10hr, startYear, startMonth, startDay, startHour, startMinute, startSecond,
+            startMillisecond, startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
             stickSurfHumidity, stickMoisture);
 
-    dfm100h->initializeEnvironment(startYear, startMonth, startDay, startHour, startMinute, startSecond,
-            startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
+    Fms_InitializeAt(pStick100hr, startYear, startMonth, startDay, startHour, startMinute, startSecond,
+            startMillisecond, startAirTemp, startAirHumidity, startSolarRad, startCumRain, stickTemp,
             stickSurfHumidity, stickMoisture);
 
     while((fscanf(inFile, "%d %d %d %d %d %d %d %lf %lf %lf %lf",
@@ -197,19 +196,19 @@ int main(int argc, char *argv[])
                   &endSolarRad, &endCumRain)) != EOF){ 
 
         //update the sticks
-        dfm1h->update(endYear, endMonth, endDay, endHour, endMinute, endSecond,
-                 endAirTemp, endAirHumidity, endSolarRad, endCumRain);
+        Fms_UpdateAt(pStick1hr, endYear, endMonth, endDay, endHour, endMinute, endSecond,
+                endMillisecond, endAirTemp, endAirHumidity, endSolarRad, endCumRain);
 
-        dfm10h->update(endYear, endMonth, endDay, endHour, endMinute, endSecond,
-                 endAirTemp, endAirHumidity, endSolarRad, endCumRain);
+        Fms_UpdateAt(pStick10hr, endYear, endMonth, endDay, endHour, endMinute, endSecond,
+                endMillisecond, endAirTemp, endAirHumidity, endSolarRad, endCumRain);
 
-        dfm100h->update(endYear, endMonth, endDay, endHour, endMinute, endSecond,
-                 endAirTemp, endAirHumidity, endSolarRad, endCumRain);
+        Fms_UpdateAt(pStick100hr, endYear, endMonth, endDay, endHour, endMinute, endSecond,
+                endMillisecond, endAirTemp, endAirHumidity, endSolarRad, endCumRain);
 
         //get the stick moisture contents
-        fuelMoisture_1 = dfm1h->meanWtdMoisture();
-        fuelMoisture_10 = dfm10h->meanWtdMoisture();
-        fuelMoisture_100 = dfm100h->meanWtdMoisture();
+        fuelMoisture_1 = Fms_MeanWtdMoisture(pStick1hr);
+        fuelMoisture_10 = Fms_MeanWtdMoisture(pStick10hr);
+        fuelMoisture_100 = Fms_MeanWtdMoisture(pStick100hr);
 
         if(verbose){
             cout<<"1-hr fuel moisture = "<<fuelMoisture_1<<endl;
@@ -224,6 +223,10 @@ int main(int argc, char *argv[])
     //clean up
     fclose(inFile);
     fclose(outFile);
+
+    Fms_Destroy(pStick1hr);
+    Fms_Destroy(pStick10hr);
+    Fms_Destroy(pStick100hr);
 
     return 0;
 }

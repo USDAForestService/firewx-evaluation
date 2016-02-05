@@ -1,15 +1,17 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-PROJECT(newfms)
+PROJECT(dfm)
 
 
 SET(SOURCE
-    newfms.cpp
+    semtime.cpp
+    deadfuelmoisture.cpp
     computeFuelMoisture.cpp
 )
 
 SET(HEADERS
-    newfms.h
+    semtime.h
+    deadfuelmoisture.h
 )
 	
-ADD_EXECUTABLE(compute_fms ${SOURCE})
+ADD_EXECUTABLE(compute_dfm ${SOURCE})
