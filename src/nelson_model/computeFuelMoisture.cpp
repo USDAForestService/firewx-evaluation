@@ -151,7 +151,8 @@ int main(int argc, char *argv[])
         cout<<"Can't open input file: "<<inputFile<<endl;
         return 0;
     }
-    outFile = fopen(outputFile, "w");
+
+    outFile = fopen(outputFile, "a");
 
     fprintf(outFile, "year,month,day,hour,1hrfm,10hrfm,100hrfm\n"); 
 
