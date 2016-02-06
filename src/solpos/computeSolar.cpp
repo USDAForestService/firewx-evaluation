@@ -44,7 +44,7 @@ void Usage()
     printf("      [--day day] [--hour hour]\n");
     printf("      [--minute minute] [--second second]\n");
     printf("      [--lat latitude] [--lon longitude]\n");
-    printf("      [--tz timezone]\n");
+    printf("      [--tz timezone] [--verbose]\n");
     printf("\n");
     printf("Returns:\n");
     printf("extraterrestrial global horizontal solar irradiance [W/m^2]\n");
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     double tz = -9999.0;
     bool verbose = false;
 
-    if(argc < 9){
+    if(argc < 19){
         Usage();
     }
     
@@ -178,29 +178,9 @@ int main(int argc, char *argv[])
     S_decode(retval, pdat);    /* look at the return code! */
 
     if(verbose){
-        cout<<" "<<endl;
         cout<<"return code = "<<retval<<endl;
-        cout<<" "<<endl; 
-        printf ( "NREL    -> 1999.07.22, daynum 203, retval 0, amass 1.335752, ampress 1.326522\n" );
-        printf ( "SOLTEST -> %d.%0.2d.%0.2d, daynum %d, retval %ld, amass %f, ampress %f\n",
-                  pdat->year, pdat->month, pdat->day, pdat->daynum,
-                retval, pdat->amass, pdat->ampress );
-        printf ( "NREL    -> azim 97.032875, cosinc 0.912569, elevref 48.409931\n" );
-        printf ( "SOLTEST -> azim %f, cosinc %f, elevref %f\n",
-                      pdat->azim,    pdat->cosinc,    pdat->elevref );
-        printf ( "NREL    -> etr 989.668518, etrn 1323.239868, etrtilt 1207.547363\n" );
-        printf ( "SOLTEST -> etr %f, etrn %f, etrtilt %f\n",
-                                          pdat->etr,    pdat->etrn,    pdat->etrtilt );
-        printf ( "NREL    -> prime 1.037040, sbcf 1.201910, sunrise 347.173431\n" );
-        printf ( "SOLTEST -> prime %f, sbcf %f, sunrise %f\n",
-                 pdat->prime,    pdat->sbcf,    pdat->sretr );
-        printf ( "NREL    -> sunset 1181.111206, unprime 0.964283, zenref 41.590069\n" );
-        printf ( "SOLTEST -> sunset %f, unprime %f, zenref %f\n",
-                                      pdat->ssetr, pdat->unprime, pdat->zenref );
-        cout<<" "<<endl;
     }
 
-    //cout<<pdat->etrn<<endl; //direct normal solar irradiance
     cout<<pdat->etr<<endl; //global horizontal solar irradiance
 
     return 0;
