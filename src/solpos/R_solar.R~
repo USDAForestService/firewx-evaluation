@@ -73,9 +73,6 @@
  solar_wm2 = mapply(cloudFun,data$cloud_cover_percent,data$solarMax_wm2)
  data = cbind(data,solar_wm2)
 
- ## Save backup
- write.csv(data,file="/Elements/Page/NDFD_Project/Weather/ASOS/asos2015pred_mod.csv")
-
  ## Fix the output order to match other data
  data = data[c("station_id","station_type","data_type","lon","lat","datetime",
  "air_temp_c","rh","wind_speed20ft_mps","wind_speedMid_mps","wind_direction_deg",
