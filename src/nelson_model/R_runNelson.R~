@@ -38,7 +38,7 @@
   dead.fms = rbind(fms,dead.fms) }
  
  ## Save the output for later
- write.csv(dead.fms,file="/home/wpage/Documents/ASOS/nelson_fms/forecast/deadfms_asos_pred.csv")
+ write.csv(dead.fms,file="deadfms_asos_obs.csv")
 
 
  

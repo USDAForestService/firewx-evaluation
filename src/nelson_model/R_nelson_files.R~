@@ -83,7 +83,6 @@
   write.table(out,file=filename,sep=" ",col.names=FALSE,row.names=FALSE,quote=FALSE)
   write.table(X,file=filename.out,sep=" ",col.names=FALSE,row.names=FALSE) }
   
-
 ### Get the ASOS observed data
  ## Use QC data set / set Working Directory
  setwd("/home/wpage/Documents/ASOS/nelson_fms/obs")
@@ -95,17 +94,14 @@
 
  ## Re-run the above for loop based on new data frame
 
-
 ### Get the ASOS forecast data
  ## Use QC data set / set Working Directory
  setwd("/home/wpage/Documents/ASOS/nelson_fms/forecast")
 
  ## Read-in data
- data = read.csv("/Elements/Page/NDFD_Project/Weather/ASOS/asos2015pred_final.csv")
+ data = read.csv("/media/wpage/Elements1/Page/NDFD_Project/Weather/ASOS/asos2015pred_mod.csv")
  data$X = NULL
  data$datetime = as.character(data$datetime)
 
  ## Re-run the above for loop based on new data frame
-
-
 
