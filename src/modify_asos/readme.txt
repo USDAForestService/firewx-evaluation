@@ -1,0 +1,1 @@
+This folder contains the R script used for modifying the ASOS (both observed and predicted) weather data into the desired format to predict fire behavior. R_asos_pred.R is for the forecast weather and R_asos_raw.R is for the observed weather.
