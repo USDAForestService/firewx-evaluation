@@ -1,0 +1,1 @@
+This folder contains the R script used for modifying the RAWS (both observed and predicted) weather data into the desired format to predict fire behavior. R_raws_pred.R is for the forecast weather and R_raws_raw.R is for the observed weather.
