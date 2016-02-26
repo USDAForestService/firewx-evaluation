@@ -88,6 +88,7 @@
 
 
 ### Run RAWS forecast data
+
  ## Set Working Directory
  setwd("/media/wpage/Elements/Page/NDFD_Project/Weather/RAWS")
 
@@ -99,14 +100,14 @@
  data = data[complete.cases(data$cloud_cover_percent),]
  data = data[with(data,order(station_id,datetime)),]
 
- ## Run function
- solarMax_wm2 = mapply(solFun,data$datetime,data$lat,data$lon)
+ ## Run function / Parallel
+ solarMax_wm2 = mcmapply(solFun,data$datetime,data$lat,data$lon,mc.cores = 8)
  
  ## Add solarMax to dataframe
  data = cbind(data,solarMax_wm2)
 
  ## Run solar correction function
- solar_wm2 = mapply(cloudFun,data$cloud_cover_percent,data$solarMax_wm2)
+ solar_wm2 = mcmapply(cloudFun,data$cloud_cover_percent,data$solarMax_wm2,mc.cores=8)
  data = cbind(data,solar_wm2)
 
  ## Fix the output order to match other data

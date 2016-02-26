@@ -108,4 +108,14 @@
  ## Re-run the above for loop based on new data frame
 
 
+### Get the RAWS forecast data
+ ## Use QC data set / set Working Directory
+ setwd("/home/wpage/Documents/RAWS/nelson_fms/forecast")
+
+ ## Read-in data
+ data = read.csv("/Elements/Page/NDFD_Project/Weather/RAWS/raws2015pred_final.csv")
+ data$X = NULL
+ data$datetime = as.character(data$datetime)
+
+ ## Re-run the above for loop based on new data frame
 
