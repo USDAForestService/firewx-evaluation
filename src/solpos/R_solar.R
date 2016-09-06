@@ -20,7 +20,7 @@
   min = time[5]
   sec = time[6]
   # Build call
-  changedir = "cd /home/wpage/Documents/firewx-evaluation/build && "
+  changedir = "cd /home/wpage/Documents/firewx-evaluation/src/solpos/build && "
   solar = paste(changedir,"./compute_solar ","--year ",Year," --month ",Month,
   " --day ",Day," --hour ",hour," --minute ",min," --second ",sec," --lat ",lat,
   " --lon ",lon," --tz 0",sep="")
@@ -90,7 +90,7 @@
 ### Run RAWS forecast data
 
  ## Set Working Directory
- setwd("/media/wpage/Elements/Page/NDFD_Project/Weather/RAWS")
+ setwd("/media/wpage/Elements/Page/NDFD_Project/Weather/RAWS/NDFD_Forecast_mod")
 
  ## Read-in data
  data = read.csv("raws2015pred_mod.csv")
@@ -101,7 +101,7 @@
  data = data[with(data,order(station_id,datetime)),]
 
  ## Run function / Parallel
- solarMax_wm2 = mcmapply(solFun,data$datetime,data$lat,data$lon,mc.cores = 8)
+ solarMax_wm2 = mcmapply(solFun,data$datetime,data$lat,data$lon,mc.cores = 4)
  
  ## Add solarMax to dataframe
  data = cbind(data,solarMax_wm2)
