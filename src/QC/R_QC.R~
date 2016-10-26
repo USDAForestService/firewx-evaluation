@@ -156,25 +156,8 @@ wrcc$WRCC_ID = tolower(wrcc$WRCC_ID)
 
 
 ### Continue QC on final data base
- ## Import data
- setwd("/media/wpage/Elements/Page/NDFD_Project/Weather")
- library(data.table)
- data = fread("final.csv")
- data = as.data.frame(data)
 
- ## Order data
- data = data[with(data,order(station_type,station_id,datetime,data_type)),]
 
- ## Fix solar radiation: it appears that station ccpt during part of December had solar
- ## radiation values that were 1000 too big 
- b.loc = grep(TRUE,ifelse(data$solar_wm2 > 2000,'TRUE',data$solar_wm2))
- 
- for (i in 1:length(b.loc)) {
-  data$solar_wm2[b.loc[i]] = data$solar_wm2[b.loc[i]] / 1000  }
 
- ### Save new output
- setwd("/media/wpage/Elements/Page/NDFD_Project/Weather")
- library(data.table)
- fwrite(data,"final2.csv")
 
 
