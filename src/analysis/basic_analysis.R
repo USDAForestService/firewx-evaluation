@@ -31,22 +31,24 @@
                        by.y=c ('station_id','datetime'))
  
   colnames(rev.data.pred)[3:30] = c('station_type','data_type','lon','lat','air_temp_c','rh',
-                                   'wind_speed20ft_mps','wind_speedMid_mps','wind_direction_deg','cloud_cover_percent','precip_mm',
-                                   'solar_wm2','FM40','asp_deg','elev_m','slope_deg','CBD_kgm3','CBH_m','CC_percent','CH_m',
-                                   'X1hrfm','X10hrfm','X100hrfm','LiveHerb_frac_percent','LiveWood_frac_percent','ROS_mps',
-                                   'flame_length_m','crown')
+  'wind_speed20ft_mps','wind_speedMid_mps','wind_direction_deg','cloud_cover_percent','precip_mm',
+  'solar_wm2','FM40','asp_deg','elev_m','slope_deg','CBD_kgm3','CBH_m','CC_percent','CH_m',
+  'X1hrfm','X10hrfm','X100hrfm','LiveHerb_frac_percent','LiveWood_frac_percent','ROS_mps',
+  'flame_length_m','crown')
  
   rev.data.pred = rev.data.pred[c('station_id','station_type','data_type','lon','lat','datetime',
-                                 'air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','wind_direction_deg',
-                                 'cloud_cover_percent','precip_mm','solar_wm2','FM40','asp_deg','elev_m','slope_deg','CBD_kgm3',
-                                 'CBH_m','CC_percent','CH_m','X1hrfm','X10hrfm','X100hrfm','LiveHerb_frac_percent',
-                                 'LiveWood_frac_percent','ROS_mps','flame_length_m','crown')]
+   'air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','wind_direction_deg',
+   'cloud_cover_percent','precip_mm','solar_wm2','FM40','asp_deg','elev_m','slope_deg','CBD_kgm3',
+   'CBH_m','CC_percent','CH_m','X1hrfm','X10hrfm','X100hrfm','LiveHerb_frac_percent',
+   'LiveWood_frac_percent','ROS_mps','flame_length_m','crown')]
  
   rev.data.pred = rev.data.pred[with(rev.data.pred,order(station_type,station_id,datetime)),]
  
+  
+  
 setwd('/home/wpage/Documents/backup')
 load("SubsetData.RData")
-#### SUMMARIZE ROS ERRORS
+#### ANALYZE ROS ERRORS
  ### Compile/organize data
  unique.stn = unique(rev.data.obs[,c('station_id','station_type','lon','lat',
  'datetime','FM40','asp_deg','elev_m','slope_deg')])
@@ -76,8 +78,27 @@ load("SubsetData.RData")
   ROS_Error$station_type = as.factor(ROS_Error$station_type)
   ROS_Error$Cat = as.factor(ROS_Error$Cat)
   ROS_Error$month = as.factor(ROS_Error$month)
-  ROS_Error$hour = as.factor(ROS_Error$hour)
+  ROS_Error$hour = as.factor(as.character(ROS_Error$hour))
   ROS_Error$FMtype = as.factor(ROS_Error$FMtype)
+
+ ### Plot errors
+ library(scales) 
+ p1 = ggplot(data=ROS_Error) + aes(ROS_error_per,group=Cat,fill=Cat) + 
+      geom_histogram(breaks=seq(-100,400,by=10),colour='black') +
+      theme_bw() + theme(axis.title.y = element_text(size=11,face="bold"), 
+      axis.title.x = element_text(size=11,face="bold"), panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black",
+      linetype="solid",size=1)) + theme(legend.position='none') +
+      scale_y_continuous(limits=c(0,800000),expand=c(0,0),labels=comma) + 
+      scale_x_continuous(limits = c(-100,403), expand=c(0,0)) + 
+      theme(legend.position=c(0.8,0.6)) +labs(y = 'Observations') + 
+      labs(x = 'Rate of spread error (%)') 
+  p1$labels$fill = 'Prediction type'
+  p1 # Plot historgram
+  
+  mean(ROS_Error$ROS_error_per) # Show various measures of central tendancy
+  median(ROS_Error$ROS_error_per)
+  sd(ROS_Error$ROS_error_per)
   
  ### Look at frequencies
   ## By station
@@ -141,12 +162,16 @@ load("SubsetData.RData")
   tbl = table(ROS_Error$Cat,ROS_Error$hour)
   test = chisq.test(tbl) # P < 0.001, the two are related
 
+  ## Station type 
+  library(MASS)
+  tbl = table(ROS_Error$Cat,ROS_Error$station_type)
+  test = chisq.test(tbl) # P < 0.001, the two are related
+  
  ### Classification methods
   ## Rpart
   library(rpart)
   library(partykit)
-  ROS.rpart = rpart(as.factor(Cat) ~ as.factor(station_type) + as.factor(FMtype) + 
-                    elev_m + as.factor(month) + as.factor(as.character(hour)),
+  ROS.rpart = rpart(Cat ~ station_type + FMtype + elev_m + month + hour,
                     method="class", data = ROS_Error)
   plotcp(ROS.rpart)
   printcp(ROS.rpart)
@@ -174,66 +199,256 @@ load("SubsetData.RData")
    small2$predicted.response <- predict(small.rf, small2)
    confusionMatrix(data=small2$predicted.response,reference=small2$Cat)
 
-  
+   
+
+#### ANALYZE WEATHER DATA
+ ### Compile/organize data
+ unique.stn = unique(rev.data.obs[,c('station_id','station_type','lon','lat','datetime')])
+ resid.lm = cbind(unique.stn,abs(rev.data.pred$air_temp_c-rev.data.obs$air_temp_c),
+  abs(rev.data.pred$rh-rev.data.obs$rh),abs(rev.data.pred$wind_speed20ft_mps-rev.data.obs$wind_speed20ft_mps),
+  abs(rev.data.pred$wind_speedMid_mps-rev.data.obs$wind_speedMid_mps),
+  abs(rev.data.pred$cloud_cover_percent-rev.data.obs$cloud_cover_percent),
+  abs(rev.data.pred$precip_mm-rev.data.obs$precip_mm),
+  abs(rev.data.pred$solar_wm2-rev.data.obs$solar_wm2),
+  abs(rev.data.pred$X1hrfm-rev.data.obs$X1hrfm),
+  abs(rev.data.pred$X10hrfm-rev.data.obs$X10hrfm),
+  abs(rev.data.pred$X100hrfm-rev.data.obs$X100hrfm),
+  abs(rev.data.pred$ROS_mps-rev.data.obs$ROS_mps),
+  abs(rev.data.pred$flame_length_m-rev.data.obs$flame_length_m),
+  rev.data.pred$wind_speed20ft_mps-rev.data.obs$wind_speed20ft_mps,
+  rev.data.pred$rh-rev.data.obs$rh,rev.data.pred$air_temp_c-rev.data.obs$air_temp_c)
+ resid.lm = cbind(resid.lm,ROS_Error$Cat,abs(ROS_Error$ROS_error_per),ROS_Error$FMtype)
+ colnames(resid.lm) = c('station_id','station_type','lon','lat','datetime','air_temp_c','rh',
+  'wind_speed20ft_mps','wind_speedMid_mps','cloud_cover_percent','precip_mm',
+  'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m','Wind_error',
+  'rh_error','temp_error','Cat','ROS_Error_per','FMtype')
+ resid.lm$FMtype = as.factor(resid.lm$FMtype)
  
+  ### Determine relative importance of each weather variable on ROS error
+   ## Rpart
+   library(rpart)
+   library(partykit)
+   ROS.rpart = rpart(ROS_mps ~ FMtype + air_temp_c + rh + wind_speed20ft_mps + 
+               cloud_cover_percent + solar_wm2, data = resid.lm)
+   plotcp(ROS.rpart)
+   printcp(ROS.rpart)
+   plot(as.party(ROS.rpart), type="simple")
+   
+   ## Random Forests by ROS error
+    # Randomly select 1/16 of data for training and testing
+    small = resid.lm[sample(nrow(resid.lm),nrow(resid.lm)/100), ]
+    small2 = resid.lm[sample(nrow(resid.lm),nrow(resid.lm)/16), ]
+    
+    # Run Random Forests
+    library(randomForestSRC)
+    options(mc.cores=4)
+    small.rf = rfsrc(ROS_mps ~ FMtype + air_temp_c + rh + wind_speed20ft_mps + 
+                cloud_cover_percent + solar_wm2, data=small, ntree=100,
+                importance=T)
+    
+     #Look at output
+     library(ggplot2)
+     library(dplyr)
+     library(RColorBrewer)
+     library(ggRandomForests)
+     plot(small.rf)
+     print(small.rf) #variance explained 29%
+     plot(gg_vimp(small.rf)) #variable importance
+     
+     #Partial dependence
+     gg_md = gg_minimal_depth(small.rf)
+     topvars = c('wind_speed20ft_mps','FMtype','rh','air_temp_c',
+                 'cloud_cover_percent')
+     partial.small = plot.variable(small.rf,xvar=topvars,partial=TRUE,
+      sorted=FALSE, show.plots=FALSE)
+     gg_p = gg_partial(partial.small)
+     plot(gg_p,xvar=topvars,panel=TRUE, se=FALSE) 
+     
+     temp = as.data.frame(gg_p) #plot with estimated lm slope for wind speed
+     ggplot(temp,aes(wind_speed20ft_mps.wind_speed20ft_mps,wind_speed20ft_mps.yhat))+
+      geom_point() + geom_abline(intercept=0,slope=0.03169)
+     
+     plot.variable(small.rf,xvar='wind_speed20ft_mps',partial=TRUE,smooth.lines = TRUE)
+     plot.variable(small.rf,xvar='FMtype',partial=TRUE,smooth.lines = TRUE)
+     plot.variable(small.rf,xvar='rh',partial=TRUE,smooth.lines = TRUE)
+      
+     #Interaction
+     inter = find.interaction(small.rf)
+     data(inter)
+     plot(gg_interaction(inter),xvar=topvars,panel=TRUE)
+     
+     #Coplots
+     gg_v = gg_variable(small.rf)
+     rm_grp = small.rf$xvar$FMtype
+     rhpts = quantile_pts(small.rf$xvar$rh,groups=10,intervals=TRUE)
+     rh_grp = cut(small.rf$xvar$rh,breaks=rhpts)
+     gg_v$rh_grp = rh_grp
+     levels(gg_v$rh_grp) = paste('rh in ',levels(gg_v$rh_grp)," (%)",sep="")
+     
+     plot(gg_v,xvar='wind_speed20ft_mps',smooth=TRUE) + facet_wrap(~rh_grp)
+     plot(gg_v,xvar='wind_speed20ft_mps',smooth=TRUE) + facet_wrap(~FMtype)
+     
+     par.coplot.small1 = gg_partial_coplot(small.rf,xvar="wind_speed20ft_mps",
+                        groups=rm_grp,show.plots=FALSE)
+     plot(par.coplot.small1)
+     par.coplot.small2 = gg_partial_coplot(small.rf,xvar="wind_speed20ft_mps",
+                         groups=rh_grp,show.plots=FALSE)
+     plot(par.coplot.small2)
+    
+     #Validation 10-fold cross-validation
+     library(caret)
+     library(e1071)
+     small2$predicted.response <- predict(small.rf, small2)
+     confusionMatrix(data=small2$predicted.response,reference=small2$Cat)
 
+  ## Use lm by ROS_error
+  library(leaps)
+  regsubsets.out = 
+   regsubsets(ROS_mps ~ FMtype + air_temp_c + rh + cloud_cover_percent + 
+   wind_speed20ft_mps + solar_wm2, data = resid.lm, nbest=1, nvmax=NULL, 
+   force.in=NULL, force.out=NULL, method='exhaustive')
+  plot(regsubsets.out,scale='adjr2', main='Adjusted R^2')
+  fit = lm(ROS_mps ~ FMtype + air_temp_c + rh + cloud_cover_percent + wind_speed20ft_mps +
+           solar_wm2, data = resid.lm)
+  best.subset = lm(ROS_mps ~ FMtype*rh*wind_speed20ft_mps, data=resid.lm)
+  summary(best.subset)
+  summary(fit)
+  
+   # Standardize coefficients  
+   library(QuantPsyc)
+   lm.beta(fit) #Standardized coefficients
+   lm.beta(best.subset) #Standardized coefficients
 
- ### Spatial analysis
- p1 = ggplot(exact,aes(lon,lat)) + geom_point() 
+ ### Maximum error in 20ft wind speed for RH and Fuel type
+  ## Plots
+  library(cowplot)
+  rh_pts = quantile_pts(resid.lm$rh_error,groups=5,intervals=TRUE)
+  resid.lm$rh_grp = cut(resid.lm$rh_error,breaks=rh_pts)
+  resid.lm$timber = ifelse(resid.lm$FMtype=='GR'|resid.lm$FMtype=='GS'|
+                    resid.lm$FMtype=='SH','Non-timber','Timber')
+  
+  p1 = ggplot(resid.lm[which(resid.lm$timber=='Non-timber'),],
+       aes(rh_grp,Wind_error)) + coord_flip() + theme_bw() +
+       geom_boxplot(aes(fill=factor(Cat)),outlier.shape=NA) +
+       theme(axis.title.x=element_blank(), axis.title.y = element_text(size=11,face="bold"), 
+       panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+       panel.background = element_rect(colour = "black", linetype="solid",size=1)) +
+       scale_y_continuous(limits = c(-2,7.5),expand=c(0,0)) +theme(legend.position=c(0.8,0.5))+
+       labs(x = 'Relative humidity error (%)') 
+  p1$labels$fill = 'ROS prediction type'
+
+  p2 = ggplot(resid.lm[which(resid.lm$timber=='Timber'),],
+       aes(rh_grp,Wind_error)) + coord_flip() + theme_bw() +
+       geom_boxplot(aes(fill=factor(Cat)),outlier.shape=NA) +
+       theme(axis.title.y = element_text(size=11,face="bold"), 
+       axis.title.x = element_text(size=11,face="bold"), 
+       panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+       panel.background = element_rect(colour = "black", linetype="solid",size=1)) +
+       scale_y_continuous(limits = c(-2,7.5),expand=c(0,0)) +theme(legend.position='none')+
+       labs(x = 'Relative humidity error (%)') + labs(y = '20ft wind speed error (m/s)') 
+  
+  plot_grid(p1,p2,align='h',labels=c('NT',"T"),ncol=1,nrow=2)
+  
+ ### Plot weather errors
+  ## 20ft wind speed
+ p1 = ggplot(data=resid.lm, aes(Wind_error, fill=Cat)) + 
+      geom_density(alpha=0.2) + theme_bw() + theme(axis.title.y = element_text(size=11,face="bold"), 
+      axis.title.x = element_text(size=11,face="bold"), panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black",
+      linetype="solid",size=1)) + theme(legend.position='none') +
+      scale_y_continuous(expand=c(0,0)) + scale_x_continuous(limits = c(-10,5), expand=c(0,0)) + 
+      theme(legend.position=c(-0.8,0.6)) + labs(y = 'Density') + 
+      labs(x = '20ft wind speed error (m/s)') 
+ p1$labels$fill = 'Prediction type'
+ p1 # Plot 
  
- dbscan::kNNdistplot(exact[,3:4],k=5)
- res.db = dbscan::dbscan(exact[,3:4],0.01, 5)
- library(factoextra)  
- fviz_cluster(res.db,exact,geom="point")
+ ## RH
+ p1 = ggplot(data=resid.lm, aes(rh_error, fill=Cat)) + 
+      geom_density(alpha=0.2) + theme_bw() + theme(axis.title.y = element_text(size=11,face="bold"), 
+      axis.title.x = element_text(size=11,face="bold"),panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black",
+      linetype="solid",size=1)) + theme(legend.position='none') +   
+      scale_y_continuous(expand=c(0,0)) + scale_x_continuous(limits = c(-100,100), expand=c(0,0)) + 
+      theme(legend.position=c(-0.8,0.6)) + labs(y = 'Density') + 
+      labs(x = 'Relative humidity error (%)') 
+ p1$labels$fill = 'Prediction type'
+ p1 # Plot    
+ 
+ ## Air temp
+ p1 = ggplot(data=resid.lm, aes(temp_error, fill=Cat)) + geom_density(alpha=0.2) + 
+      theme_bw() + theme(axis.title.y = element_text(size=11,face="bold"), 
+      axis.title.x = element_text(size=11,face="bold"), panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black",
+      linetype="solid",size=1)) + theme(legend.position='none') +                                                                 
+      scale_y_continuous(expand=c(0,0)) + scale_x_continuous(limits = c(-20,20), expand=c(0,0)) + 
+      theme(legend.position=c(-0.8,0.6)) + labs(y = 'Density') + 
+      labs(x = 'Air temperature error (C)') 
+ p1$labels$fill = 'Prediction type'
+ p1 # Plot  
+ 
+ ## 20ft wind speed + rh
+ med = resid.lm[sample(nrow(resid.lm),nrow(resid.lm)/5), ]
+ p1 = ggplot(data=med, aes(Wind_error,rh_error,fill=Cat,colour=Cat)) + geom_density_2d(bins=2) +
+      theme_bw() + theme(axis.title.y = element_text(size=11,face="bold"), 
+      axis.title.x = element_text(size=11,face="bold"),panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black",
+      linetype="solid",size=1)) + scale_y_continuous(expand=c(0,0)) + scale_x_continuous(expand=c(0,0)) + 
+      labs(y = 'Relative humidity error (%)') + labs(x = 'Wind speed error (m/s)') 
+ p1 # Plot  
+ 
+ 
+ 
+ 
+ 
+    ### Analyze residual of ROS using lm
+  ## Prepare data
   
-### Time analysis
-p1 = ggplot(ROS_Error,aes(datetime,ROS_error_per,color=Cat)) + geom_point() +
-     scale_y_continuous(limits=c(0,400))
-
-
-small = ROS_Error[sample(nrow(ROS_Error),nrow(ROS_Error)/2),]
-
-
-###
-library(scales) 
-ROS_Error$Cat = as.factor(ROS_Error$Cat)
-p1 = ggplot(data=ROS_Error) + aes(ROS_error_per,group=Cat,fill=Cat) + 
-     geom_histogram(breaks=seq(-100,400,by=10),colour='black') +
-     theme_bw() + theme(axis.title.y = element_text(size=11,face="bold"), 
-     axis.title.x = element_text(size=11,face="bold"), panel.grid.major = element_blank(),
-     panel.grid.minor = element_blank(),panel.background = element_rect(colour = "black",
-     linetype="solid",size=1)) + theme(legend.position='none') +
-     scale_y_continuous(limits=c(0,800000),expand=c(0,0),labels=comma) + 
-     scale_x_continuous(limits = c(-100,403), expand=c(0,0)) + 
-     theme(legend.position=c(0.8,0.6)) +labs(y = 'Observations') + 
-     labs(x = 'Error (%)') 
-p1$labels$group = 'Prediction type'
-p1 # Plot historgram
-
-mean(ROS_Error$ROS_error_per) # Show various measures of central tendancy
-median(ROS_Error$ROS_error_per)
-sd(ROS_Error$ROS_error_per)
-
+  ## Build model
 
   
-  unique.stn = unique(rev.data.obs[,c('station_id','station_type','datetime')])
-  resid.lm = cbind(unique.stn,abs(rev.data.pred$air_temp_c-rev.data.obs$air_temp_c),
-                   abs(rev.data.pred$rh-rev.data.obs$rh),abs(rev.data.pred$wind_speed20ft_mps-rev.data.obs$wind_speed20ft_mps),
-                   abs(rev.data.pred$wind_speedMid_mps-rev.data.obs$wind_speedMid_mps),
-                   abs(rev.data.pred$cloud_cover_percent-rev.data.obs$cloud_cover_percent),
-                   abs(rev.data.pred$precip_mm-rev.data.obs$precip_mm),
-                   abs(rev.data.pred$solar_wm2-rev.data.obs$solar_wm2),
-                   abs(rev.data.pred$X1hrfm-rev.data.obs$X1hrfm),
-                   abs(rev.data.pred$X10hrfm-rev.data.obs$X10hrfm),
-                   abs(rev.data.pred$X100hrfm-rev.data.obs$X100hrfm),
-                   abs(rev.data.pred$ROS_mps-rev.data.obs$ROS_mps),
-                   abs(rev.data.pred$flame_length_m-rev.data.obs$flame_length_m))
+  fit = lm(ROS_mps ~ air_temp_c + rh + cloud_cover_percent + wind_speed20ft_mps + solar_wm2, data=resid.lm)
+  summary(fit)
   
-  colnames(resid.lm) = c('station_id','station_type','datetime','air_temp_c','rh',
-                         'wind_speed20ft_mps','wind_speedMid_mps','cloud_cover_percent',
-                         'precip_mm','solar_wm2','X1hrfm','X10hrfm','X100hrfm',
-                         'ROS_mps','flame_length_m')
+
   
+  fit2 = lm(ROS_mps ~ X1hrfm + X10hrfm + X100hrfm + wind_speed20ft_mps, data=resid.lm)
+  summary(fit2)
+  lm.beta(fit2)
+  
+  
+  ### PCA Analysis
+  log.resid = resid.lm[,c(4,5,6,11,12,13)]
+  log.resid = log.resid[complete.cases(log.resid),]
+  
+  resid.pca = prcomp(resid.lm[,c(4,5,6,11,12,13)], center=TRUE, scale.=TRUE)
+  pca = as.data.frame(resid.pca$x)
+  
+  fit = lm(resid.lm$ROS_mps ~ PC1 + PC2 + PC3 + PC4 + PC5, data=pca)
+  summary(fit)
+  
+  
+  ### Hierarchical clustering
+  library(fastcluster)
+  clusters = hclust(dist(resid.lm[1:10000,c(4,5)]))
+  clusterCut = cutree(clusters,10)
+  table(clusterCut,resid.lm[1:10000,c('station_id')])
+  
+  set.seed(20)
+  residCluster = kmeans(resid.lm[,4:5],5, nstart=20)
+  table(residCluster$cluster,resid.lm$station_id)
+  
+  library(ggplot2)
+  residCluster$cluster = as.factor(residCluster$cluster)
+  p1 = ggplot(resid.lm,aes(air_temp_c,rh,color=residCluster$cluster)) + geom_point()
+  
+  sumSquare = data.frame()
+  for(i in 1:50) {
+    residCluster = kmeans(resid.lm[,4:5],i,nstart=20)
+    numcluster = i
+    sums = as.numeric(residCluster[6])/as.numeric(residCluster[3])
+    out = cbind(numcluster,sums)
+    sumSquare = rbind(out,sumSquare)
+  }
   
   
 
@@ -242,7 +457,8 @@ sd(ROS_Error$ROS_error_per)
 
 ### Analyze all data (except cloud cover, RAWS obs no cloud cover info)
  ## Build results data frame in for loop
- var = c('air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','precip_mm',   'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m')
+ var = c('air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','precip_mm',   
+         'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m')
  out.df = data.frame()
 
  for (i in 1:length(var)) {
@@ -272,7 +488,8 @@ sd(ROS_Error$ROS_error_per)
 
 
  ## Complete for loop to calculate error stats
- var = c('air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','precip_mm',   'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m')
+ var = c('air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','precip_mm',   
+         'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m')
  out.df = data.frame()
 
  for (i in 1:length(var)) {
@@ -381,64 +598,6 @@ sd(ROS_Error$ROS_error_per)
  dev.off()
 
 
-### Analyze residual of ROS using lm
- ## Prepare data
-
- ## Build model
- library(leaps)
- regsubsets.out = 
-   regsubsets(ROS_mps ~ air_temp_c + rh + cloud_cover_percent + wind_speed20ft_mps +
-                solar_wm2, data = resid.lm, nbest=1, nvmax=NULL, force.in=NULL,
-                force.out=NULL, method='exhaustive')
- plot(regsubsets.out,scale='adjr2', main='Adjusted R^2')
- best.subset = lm(ROS_mps ~ wind_speed20ft_mps, data=resid.lm)
- summary(best.subset)
- 
- fit = lm(ROS_mps ~ air_temp_c + rh + cloud_cover_percent + wind_speed20ft_mps + solar_wm2, data=resid.lm)
- summary(fit)
- 
- library(QuantPsyc)
- lm.beta(fit) #Standardized coefficients
- 
- fit2 = lm(ROS_mps ~ X1hrfm + X10hrfm + X100hrfm + wind_speed20ft_mps, data=resid.lm)
- summary(fit2)
- lm.beta(fit2)
-
- 
-### PCA Analysis
-log.resid = resid.lm[,c(4,5,6,11,12,13)]
-log.resid = log.resid[complete.cases(log.resid),]
-
-resid.pca = prcomp(resid.lm[,c(4,5,6,11,12,13)], center=TRUE, scale.=TRUE)
-pca = as.data.frame(resid.pca$x)
-
-fit = lm(resid.lm$ROS_mps ~ PC1 + PC2 + PC3 + PC4 + PC5, data=pca)
-summary(fit)
-
-
-### Hierarchical clustering
-library(fastcluster)
-clusters = hclust(dist(resid.lm[1:10000,c(4,5)]))
-clusterCut = cutree(clusters,10)
-table(clusterCut,resid.lm[1:10000,c('station_id')])
-
-set.seed(20)
-residCluster = kmeans(resid.lm[,4:5],5, nstart=20)
-table(residCluster$cluster,resid.lm$station_id)
-
-library(ggplot2)
-residCluster$cluster = as.factor(residCluster$cluster)
-p1 = ggplot(resid.lm,aes(air_temp_c,rh,color=residCluster$cluster)) + geom_point()
-
-sumSquare = data.frame()
-for(i in 1:50) {
-  residCluster = kmeans(resid.lm[,4:5],i,nstart=20)
-  numcluster = i
-  sums = as.numeric(residCluster[6])/as.numeric(residCluster[3])
-  out = cbind(numcluster,sums)
-  sumSquare = rbind(out,sumSquare)
-}
-
 
 
 
@@ -457,7 +616,8 @@ res.db = fpc::dbscan(resid.lm[,4:5],eps=0.1,MinPts=5)
 
 ### Look at correlations of residuals with observed data
  ## Complete for loop to calculate corr's
- var = c('air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','precip_mm',   'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m')
+ var = c('air_temp_c','rh','wind_speed20ft_mps','wind_speedMid_mps','precip_mm',   
+         'solar_wm2','X1hrfm','X10hrfm','X100hrfm','ROS_mps','flame_length_m')
  out.df = data.frame()
 
  for (i in 1:length(var)) {
