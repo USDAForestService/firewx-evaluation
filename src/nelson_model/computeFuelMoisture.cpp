@@ -42,7 +42,7 @@ void Usage()
     printf("compute_fms [--input_file inFile] [--output_file outFile] [--verbose]\n");
     printf("\n");
     printf("Returns:\n");
-    printf("1-hr, 10-hr, and 100-hr fuel moistures are written to fms_output.txt.\n");
+    printf("1-hr, 10-hr, 100-hr, and 1000-hr fuel moistures are written to fms_output.txt.\n");
     printf("\n");
     printf("Example:\n");
     printf("compute_fms --input_file fms_input.txt --output_file fms_output.txt\n");
