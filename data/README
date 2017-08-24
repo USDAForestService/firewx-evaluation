@@ -1,0 +1,15 @@
+solar_input.csv is an example input csv for use with computeSolar. Example usage:
+
+./computeSolar --csv solar_input.csv
+
+The input csv must consist of comma-separated values without spaces. Each column is an
+input and each row is a separate run. The order of inputs is the same as on the command 
+line:
+
+year,month,day,hour,minute,second,lat,lon,timezone
+
+If an input file is provided with the --csv option and output file called solopos_output.csv
+with one row for each run. Each row will contain the input values and the calculated solar 
+radiation in the last column:
+
+year,month,day,hour,minute,second,lat,lon,timezone,solarradiation
