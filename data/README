@@ -8,8 +8,8 @@ line:
 
 year,month,day,hour,minute,second,lat,lon,timezone
 
-If an input file is provided with the --csv option and output file called solopos_output.csv
-with one row for each run. Each row will contain the input values and the calculated solar 
-radiation in the last column:
+If an input file is provided with the --csv option an output file called solopos_output.csv
+will be created in the working directory. The output file will have one row for each run. 
+Each row will contain the input values and the calculated solar radiation in the last column:
 
 year,month,day,hour,minute,second,lat,lon,timezone,solarradiation
