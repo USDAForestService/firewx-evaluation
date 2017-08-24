@@ -26,7 +26,6 @@
  * DEALINGS IN THE SOFTWARE.
  *
  *****************************************************************************/
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -45,97 +44,22 @@ void Usage()
     printf("      [--minute minute] [--second second]\n");
     printf("      [--lat latitude] [--lon longitude]\n");
     printf("      [--tz timezone] [--verbose]\n");
+    printf("      [--csv input.csv]\n");
     printf("\n");
     printf("Returns:\n");
     printf("extraterrestrial global horizontal solar irradiance [W/m^2]\n");
     printf("\n");
-    printf("Example:\n");
+    printf("Examples:\n");
     printf("compute_solar --year 1999 --month 7 --day 22 --hour 9 ");
     printf("--minute 45 --second 37 --lat 33.65 --lon -84.43 --tz -5.0\n");
+    printf("compute_solar --csv input.csv\n");
     printf("\n");
     exit(1);
 }
 
-int main(int argc, char *argv[])
+posdata * computeSolar(int year, int month, int day, int hour, int minute,
+                      int second, double lat, double lon, double tz, bool verbose)
 {
-    int year = -1;
-    int month = -1;
-    int day = -1;
-    int hour = -1;
-    int minute = -1;
-    int second = -1;
-    double lat = -1.0;
-    double lon = -1.0;
-    double tz = -9999.0;
-    bool verbose = false;
-
-    if(argc < 19){
-        Usage();
-    }
-    
-    int i = 1;
-    while(i < argc)
-    {
-        if(EQUAL(argv[i], "--year"))
-        {
-            year = atoi(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--month"))
-        {
-            month = atoi(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--day"))
-        {
-            day = atoi(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--hour"))
-        {
-           hour  = atoi(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--minute"))
-        {
-            minute = atoi(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--second"))
-        {
-            second = atoi(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--lat"))
-        {
-            lat = atof(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--lon"))
-        {
-            lon = atof(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--tz"))
-        {
-            tz = atof(argv[++i]);
-        }
-        else if(EQUAL(argv[i], "--verbose"))
-        {
-            verbose = true;
-        }
-        else
-        {
-            Usage();
-        }
-        i++;
-    }
-
-    if(verbose){
-        cout<<" "<<endl;
-        cout<<"year = "<<year<<endl;
-        cout<<"month = "<<month<<endl;
-        cout<<"day = "<<day<<endl;
-        cout<<"hour = "<<hour<<endl;
-        cout<<"minute = "<<minute<<endl;
-        cout<<"second = "<<second<<endl;
-        cout<<"lat = "<<lat<<endl;
-        cout<<"lon = "<<lon<<endl;
-        cout<<"tz = "<<tz<<endl;
-    }
-
     struct posdata pd, *pdat; /* declare a posdata struct and a pointer for it */
 
     long retval;              /* to capture S_solpos return codes */
@@ -181,7 +105,149 @@ int main(int argc, char *argv[])
         cout<<"return code = "<<retval<<endl;
     }
 
-    cout<<pdat->etr<<endl; //global horizontal solar irradiance
+    return pdat;
+}
+
+int main(int argc, char *argv[])
+{
+    int year = -1;
+    int month = -1;
+    int day = -1;
+    int hour = -1;
+    int minute = -1;
+    int second = -1;
+    double lat = -1.0;
+    double lon = -1.0;
+    double tz = -9999.0;
+    bool verbose = false;
+    std::string inputFile = "!set";
+
+    if(argc < 2){
+        Usage();
+    }
+    else if(EQUAL(argv[1], "--csv"))
+    {
+        if(argc < 3){
+            Usage();
+        }
+    }
+    else
+    {
+        if(argc < 19){
+            Usage();
+        }
+    }
+    
+    int i = 1;
+    if(argc < 19) //csv input
+    {
+        while(i < argc)
+        {
+            if(EQUAL(argv[i], "--csv"))
+            {
+                inputFile = argv[++i];
+            }
+            else if(EQUAL(argv[i], "--verbose"))
+            {
+                verbose = true;
+            }
+            else
+            {
+                Usage();
+            }
+            i++;
+        }
+    }
+    else // individual inputs on command line
+    {
+        while(i < argc)
+        {
+            if(EQUAL(argv[i], "--year"))
+            {
+                year = atoi(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--month"))
+            {
+                month = atoi(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--day"))
+            {
+                day = atoi(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--hour"))
+            {
+               hour  = atoi(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--minute"))
+            {
+                minute = atoi(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--second"))
+            {
+                second = atoi(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--lat"))
+            {
+                lat = atof(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--lon"))
+            {
+                lon = atof(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--tz"))
+            {
+                tz = atof(argv[++i]);
+            }
+            else if(EQUAL(argv[i], "--verbose"))
+            {
+                verbose = true;
+            }
+            else
+            {
+                Usage();
+            }
+            i++;
+        }
+    }
+
+    if(verbose){
+        cout<<" "<<endl;
+        cout<<"year = "<<year<<endl;
+        cout<<"month = "<<month<<endl;
+        cout<<"day = "<<day<<endl;
+        cout<<"hour = "<<hour<<endl;
+        cout<<"minute = "<<minute<<endl;
+        cout<<"second = "<<second<<endl;
+        cout<<"lat = "<<lat<<endl;
+        cout<<"lon = "<<lon<<endl;
+        cout<<"tz = "<<tz<<endl;
+    }
+
+    struct posdata pd, *pdat; /* declare a posdata struct and a pointer for it */
+
+    if(inputFile != "!set")
+    {
+        cout<<"Reading inputs from csv..."<<endl;
+        FILE *input;
+        FILE *output;
+        input = fopen( inputFile.c_str(), "r" );
+        output = fopen("solpos_output.csv", "w");
+
+        while((fscanf(input, "%d,%d,%d,%d,%d,%d,%lf,%lf,%lf",
+                     &year, &month, &day, &hour, &minute, &second, &lat, &lon, &tz)) != EOF)
+        {
+            pdat = computeSolar(year, month, day, hour, minute, second, lat, lon, tz, verbose);
+            fprintf(output,"%d,%d,%d,%d,%d,%d,%lf,%lf,%lf,%lf\n",
+                    year, month, day, hour, minute, second, lat, lon, tz, pdat->etr);
+        }
+        fclose(input);
+        fclose(output);
+    }
+    else
+    {
+        pdat = computeSolar(year, month, day, hour, minute, second, lat, lon, tz, verbose);
+        cout<<pdat->etr<<endl; //global horizontal solar irradiance
+    }
 
     return 0;
 }
